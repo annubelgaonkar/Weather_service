@@ -1,5 +1,6 @@
 package dev.anuradha.weatherservice.controller;
 
+import dev.anuradha.weatherservice.dto.BaseResponseDTO;
 import dev.anuradha.weatherservice.dto.WeatherRequest;
 import dev.anuradha.weatherservice.dto.WeatherResponse;
 import dev.anuradha.weatherservice.service.WeatherService;
@@ -18,8 +19,16 @@ public class WeatherController {
     private final WeatherService weatherService;
 
     @PostMapping
-    public ResponseEntity<WeatherResponse> getWeather(@RequestBody WeatherRequest weatherRequest){
+    public ResponseEntity<BaseResponseDTO<WeatherResponse>> getWeather(
+            @RequestBody WeatherRequest weatherRequest){
+
         WeatherResponse weatherResponse = weatherService.getWeather(weatherRequest);
-        return ResponseEntity.ok(weatherResponse);
+
+        BaseResponseDTO<WeatherResponse> baseResponseDTO = new BaseResponseDTO<>(
+                true,
+                "Weather fetched successfully",
+                weatherResponse
+        );
+        return ResponseEntity.ok(baseResponseDTO);
     }
 }
