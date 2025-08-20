@@ -106,3 +106,7 @@ mvn test
 - Add Docker support for one-command setup  
 - Add more endpoints (e.g., 5-day forecast)  
 - More comprehensive repository tests  
+
+👤 Author
+
+Anuradha Belgaonkar — Backend Developer (Java, Spring Boot, Microservices)
