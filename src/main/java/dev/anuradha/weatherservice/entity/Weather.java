@@ -20,7 +20,7 @@ public class Weather {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pincode_id", nullable = false)
-    private Pincode pincodeLocation;
+    private Pincode pincode;
 
     @Column(name = "for_date", nullable = false)
     private LocalDate forDate;

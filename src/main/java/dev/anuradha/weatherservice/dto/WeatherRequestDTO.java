@@ -20,5 +20,5 @@ public class WeatherRequestDTO {
             regexp = "\\d{4}-\\d{2}-\\d{2}",
             message = "Date must be in format yyyy-MM-dd"
     )
-    private LocalDate forDate;
+    private String forDate;
 }

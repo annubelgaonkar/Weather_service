@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface WeatherRepository extends JpaRepository<Weather, Long> {
 
-    Optional<Weather> findByPincodeLocationAndForDate(
+    Optional<Weather> findByPincodeAndForDate(
             Pincode location,
             LocalDate forDate);
 }

@@ -38,7 +38,7 @@ class WeatherControllerTest {
 
         WeatherRequestDTO request = new WeatherRequestDTO(
                 "590010",
-                LocalDate.of(2025, 8, 19)
+                "2025-08-19"
         );
 
         WeatherResponseDTO response = WeatherResponseDTO.builder()

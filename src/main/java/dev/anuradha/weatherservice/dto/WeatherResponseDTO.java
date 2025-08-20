@@ -2,6 +2,8 @@ package dev.anuradha.weatherservice.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Setter
 @Getter
 @AllArgsConstructor
