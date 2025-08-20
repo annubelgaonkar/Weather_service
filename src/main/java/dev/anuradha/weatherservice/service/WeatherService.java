@@ -1,8 +1,8 @@
 package dev.anuradha.weatherservice.service;
 
-import dev.anuradha.weatherservice.dto.WeatherRequest;
-import dev.anuradha.weatherservice.dto.WeatherResponse;
+import dev.anuradha.weatherservice.dto.WeatherRequestDTO;
+import dev.anuradha.weatherservice.dto.WeatherResponseDTO;
 
 public interface WeatherService {
-    WeatherResponse getWeather(WeatherRequest weatherRequest);
+    WeatherResponseDTO getWeather(WeatherRequestDTO weatherRequest);
 }

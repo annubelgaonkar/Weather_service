@@ -1,94 +1,114 @@
 package dev.anuradha.weatherservice.service;
 
-import dev.anuradha.weatherservice.dto.WeatherRequest;
-import dev.anuradha.weatherservice.dto.WeatherResponse;
-import dev.anuradha.weatherservice.entity.PincodeLocation;
-import dev.anuradha.weatherservice.entity.WeatherInfo;
-import dev.anuradha.weatherservice.repository.PincodeLocationRepository;
-import dev.anuradha.weatherservice.repository.WeatherInfoRepository;
+import dev.anuradha.weatherservice.dto.WeatherRequestDTO;
+import dev.anuradha.weatherservice.dto.WeatherResponseDTO;
+import dev.anuradha.weatherservice.entity.Pincode;
+import dev.anuradha.weatherservice.entity.Weather;
+import dev.anuradha.weatherservice.repository.PincodeRepository;
+import dev.anuradha.weatherservice.repository.WeatherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-import java.util.Map;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class WeatherServiceImpl implements WeatherService {
 
-    private final PincodeLocationRepository pincodeLocationRepository;
-    private final WeatherInfoRepository weatherInfoRepository;
-    private final RestTemplate restTemplate;
+    private final PincodeRepository pincodeRepository;
+    private final WeatherRepository weatherRepository;
+    private final WebClient webClient; // injected from config
 
     @Value("${openweather.api.key}")
     private String apiKey;
 
-    @Override
-    public WeatherResponse getWeather(WeatherRequest request) {
-        // Step 1: Find location by pincode
-        PincodeLocation location = pincodeLocationRepository.findByPincode(request.getPincode())
-                .orElseGet(() -> fetchAndSaveLocation(request.getPincode()));
+    @Value("${openweather.api.url}")
+    private String weatherUrl;
 
-        // Step 2: Check DB for cached weather info
-        Optional<WeatherInfo> cachedWeather = weatherInfoRepository.findByPincodeLocationAndForDate(location, request.getForDate());
-        if (cachedWeather.isPresent()) {
-            return mapToResponse(request.getPincode(), cachedWeather.get());
+    @Value("${openweather.geo.url}")
+    private String geoUrl;
+
+    @Override
+    public WeatherResponseDTO getWeather(WeatherRequestDTO request) {
+        LocalDate date = LocalDate.parse(request.getForDate());
+
+        // 1. Check if Pincode exists
+        Pincode pincode = pincodeRepository.findByCode(request.getPincode())
+                .orElseGet(() -> fetchAndSavePincode(request.getPincode()));
+
+        // 2. Check if weather info exists for that date
+        Optional<Weather> existing = weatherRepository.findByPincodeAndForDate(pincode, date);
+        if (existing.isPresent()) {
+            Weather w = existing.get();
+            return WeatherResponseDTO.builder()
+                    .pincode(request.getPincode())
+                    .forDate(request.getForDate())
+                    .temperature(w.getTemperature())
+                    .humidity(w.getHumidity())
+                    .description(w.getDescription())
+                    .source("DB")
+                    .build();
         }
 
-        // Step 3: Call OpenWeather API
-        String url = String.format(
-                "https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s&units=metric",
-                location.getLatitude(), location.getLongitude(), apiKey);
+        // 3. Fetch weather info from OpenWeather API
+        WeatherResponseDTO apiResponse = fetchWeatherFromAPI(pincode, date);
 
-        var response = restTemplate.getForObject(url, Map.class);
-
-        Double temp = Double.valueOf(((Map<String, Object>) response.get("main")).get("temp").toString());
-        Integer humidity = (Integer) ((Map<String, Object>) response.get("main")).get("humidity");
-        String description = (String) ((Map<String, Object>) ((java.util.List) response.get("weather")).get(0)).get("description");
-
-        // Step 4: Save to DB
-        WeatherInfo weatherInfo = WeatherInfo.builder()
-                .pincodeLocation(location)
-                .forDate(request.getForDate())
-                .temperature(temp)
-                .humidity(humidity)
-                .weatherDescription(description)
-                .fetchedAt(LocalDateTime.now())
+        // 4. Save in DB
+        Weather weather = Weather.builder()
+                .pincode(pincode)
+                .forDate(date)
+                .temperature(apiResponse.getTemperature())
+                .humidity(apiResponse.getHumidity())
+                .description(apiResponse.getDescription())
+                .source("API")
                 .build();
+        weatherRepository.save(weather);
 
-        weatherInfoRepository.save(weatherInfo);
-
-        return mapToResponse(request.getPincode(), weatherInfo);
+        apiResponse.setSource("API");
+        return apiResponse;
     }
 
-    private PincodeLocation fetchAndSaveLocation(String pincode) {
-        // Call OpenWeather Geocoding API
-        String url = String.format("http://api.openweathermap.org/geo/1.0/zip?zip=%s,IN&appid=%s", pincode, apiKey);
+    private Pincode fetchAndSavePincode(String pincode) {
+        // Call OpenWeather Geo API for pincode → lat/long
+        var response = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(geoUrl)
+                        .queryParam("zip", pincode + ",IN")
+                        .queryParam("appid", apiKey)
+                        .build())
+                .retrieve()
+                .bodyToMono(OpenWeatherGeoResponse.class)
+                .block();
 
-        var response = restTemplate.getForObject(url, Map.class);
-
-        Double lat = Double.valueOf(response.get("lat").toString());
-        Double lon = Double.valueOf(response.get("lon").toString());
-
-        PincodeLocation location = PincodeLocation.builder()
-                .pincode(pincode)
-                .latitude(lat)
-                .longitude(lon)
+        Pincode entity = Pincode.builder()
+                .code(pincode)
+                .latitude(response.getLat())
+                .longitude(response.getLon())
                 .build();
-
-        return pincodeLocationRepository.save(location);
+        return pincodeRepository.save(entity);
     }
 
-    private WeatherResponse mapToResponse(String pincode, WeatherInfo weatherInfo) {
-        return WeatherResponse.builder()
-                .pincode(pincode)
-                .forDate(weatherInfo.getForDate().toString())
-                .temperature(weatherInfo.getTemperature())
-                .humidity(weatherInfo.getHumidity())
-                .description(weatherInfo.getWeatherDescription())
+    private WeatherResponseDTO fetchWeatherFromAPI(Pincode pincode, LocalDate date) {
+        var response = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(weatherUrl)
+                        .queryParam("lat", pincode.getLatitude())
+                        .queryParam("lon", pincode.getLongitude())
+                        .queryParam("appid", apiKey)
+                        .queryParam("units", "metric")
+                        .build())
+                .retrieve()
+                .bodyToMono(OpenWeatherMainResponse.class)
+                .block();
+
+        return WeatherResponseDTO.builder()
+                .pincode(pincode.getCode())
+                .forDate(date.toString())
+                .temperature(response.getMain().getTemp())
+                .humidity(response.getMain().getHumidity())
+                .description(response.getWeather().get(0).getDescription())
                 .build();
     }
 }

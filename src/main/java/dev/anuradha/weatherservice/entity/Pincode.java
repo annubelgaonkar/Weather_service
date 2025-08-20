@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PincodeLocation {
+public class Pincode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

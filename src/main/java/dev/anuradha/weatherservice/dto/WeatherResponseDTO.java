@@ -7,11 +7,12 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class WeatherResponse {
+public class WeatherResponseDTO {
 
     private String pincode;
     private String forDate;
     private Double temperature;
     private Integer humidity;
     private String description;
+    private String source;
 }

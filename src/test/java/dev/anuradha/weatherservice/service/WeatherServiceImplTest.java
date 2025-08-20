@@ -1,11 +1,11 @@
 package dev.anuradha.weatherservice.service;
 
-import dev.anuradha.weatherservice.dto.WeatherRequest;
-import dev.anuradha.weatherservice.dto.WeatherResponse;
-import dev.anuradha.weatherservice.entity.PincodeLocation;
-import dev.anuradha.weatherservice.entity.WeatherInfo;
-import dev.anuradha.weatherservice.repository.PincodeLocationRepository;
-import dev.anuradha.weatherservice.repository.WeatherInfoRepository;
+import dev.anuradha.weatherservice.dto.WeatherRequestDTO;
+import dev.anuradha.weatherservice.dto.WeatherResponseDTO;
+import dev.anuradha.weatherservice.entity.Pincode;
+import dev.anuradha.weatherservice.entity.Weather;
+import dev.anuradha.weatherservice.repository.PincodeRepository;
+import dev.anuradha.weatherservice.repository.WeatherRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,16 +19,15 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class WeatherServiceImplTest {
 
     @Mock
-    private PincodeLocationRepository pincodeLocationRepository;
+    private PincodeRepository pincodeLocationRepository;
 
     @Mock
-    private WeatherInfoRepository weatherInfoRepository;
+    private WeatherRepository weatherInfoRepository;
 
     @Mock
     private RestTemplate restTemplate;
@@ -43,11 +42,11 @@ class WeatherServiceImplTest {
 
     @Test
     void testgetWeather_FromCache(){
-        PincodeLocation location =
-                new PincodeLocation(1L, "560017",
+        Pincode location =
+                new Pincode(1L, "590010",
                         18.24, 74.56);
 
-        WeatherInfo weatherInfo = WeatherInfo.builder()
+        Weather weatherInfo = Weather.builder()
                 .pincodeLocation(location)
                 .forDate(LocalDate.of(2025,8,19))
                 .temperature(23.0)
@@ -65,8 +64,8 @@ class WeatherServiceImplTest {
                 .thenReturn(Optional.of(weatherInfo));
 
         //when
-        WeatherResponse response = weatherService.getWeather(
-                new WeatherRequest("590010",
+        WeatherResponseDTO response = weatherService.getWeather(
+                new WeatherRequestDTO("590010",
                         LocalDate.of(2025,
                                 8,
                                 19)));
@@ -76,7 +75,7 @@ class WeatherServiceImplTest {
         assertEquals("590010", response.getPincode());
         assertEquals(23, response.getTemperature());
         assertEquals("overcast clouds", response.getDescription());
-        assertEquals(weatherInfoRepository,never()).save(any());
+        verify(weatherInfoRepository,never()).save(any());
 
     }
 

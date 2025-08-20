@@ -12,28 +12,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class WeatherInfo {
+public class Weather {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pincode_id", nullable = false)
-    private PincodeLocation pincodeLocation;
+    private Pincode pincodeLocation;
 
     @Column(name = "for_date", nullable = false)
     private LocalDate forDate;
 
-    @Column(nullable = false)
     private Double temperature;
-
-    @Column(nullable = false)
     private Integer humidity;
+    private String description;
 
     @Column(nullable = false)
-    private String weatherDescription;
-
-    @Column(name = "fetched_at", nullable = false)
-    private LocalDateTime fetchedAt;
+    private String source;
 }
