@@ -5,6 +5,7 @@ import dev.anuradha.weatherservice.dto.WeatherRequestDTO;
 import dev.anuradha.weatherservice.dto.WeatherResponseDTO;
 import dev.anuradha.weatherservice.service.WeatherService;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,7 +35,7 @@ class WeatherControllerTest {
 
 
     @Test
-    void testWeatherEndpoint() throws Exception{
+    void testWeatherEndpoint_Success() throws Exception{
 
         WeatherRequestDTO request = new WeatherRequestDTO(
                 "590010",
@@ -46,7 +47,7 @@ class WeatherControllerTest {
                 .forDate("2025-08-19")
                 .temperature(30.0)
                 .humidity(80)
-                .description("Sunny")
+                .description("overcast clouds")
                 .build();
 
         //when(weatherService.getWeather(request)).thenReturn(response);
@@ -63,6 +64,25 @@ class WeatherControllerTest {
                 .andExpect(jsonPath("$.data.forDate").value("2025-08-19"))
                 .andExpect(jsonPath("$.data.temperature").value(30.0))
                 .andExpect(jsonPath("$.data.humidity").value(80))
-                .andExpect(jsonPath("$.data.description").value("Sunny"));
+                .andExpect(jsonPath("$.data.description").value("overcast clouds"));
+    }
+
+    @Test
+    void testWeatherEndpoint_Failure() throws Exception {
+        // Given: service throws exception
+        Mockito.when(weatherService.getWeather(any(WeatherRequestDTO.class)))
+                .thenThrow(new RuntimeException("Something went wrong"));
+
+        WeatherRequestDTO request = new WeatherRequestDTO("560099", LocalDate.now().toString());
+
+        // When + Then
+        mockMvc.perform(post("/api/weather")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is5xxServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("An unexpected error occurred: Something went wrong"));
+
     }
 }
