@@ -38,8 +38,8 @@ cd Weather_service
 ### 2. Configure Database
 Update `src/main/resources/application.properties`:
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/weatherdb
-spring.datasource.username=postgres
+spring.datasource.url=jdbc:postgresql://<host>:<port>/<database_name>
+spring.datasource.username=yourusername
 spring.datasource.password=yourpassword
 
 spring.jpa.hibernate.ddl-auto=update
