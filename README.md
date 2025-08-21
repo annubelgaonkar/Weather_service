@@ -31,8 +31,8 @@ Optimized with caching in a PostgreSQL database to reduce external API calls.
 
 ### 1. Clone repo
 ```bash
-git clone https://github.com/your-username/weather-service.git
-cd weather-service
+git clone https://github.com/annubelgaonkar/Weather_service.git
+cd Weather_service
 ```
 
 ### 2. Configure Database
